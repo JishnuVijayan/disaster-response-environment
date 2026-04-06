@@ -12,3 +12,6 @@ build/
 implementation.md
 .claude
 venv/
+HACKATHON_IMPROVEMENTS.md
+requirement.txt
+validate-submission.sh
