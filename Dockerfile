@@ -1,6 +1,6 @@
 # DisasterResponseEnv — Dockerfile (root level as required by OpenEnv spec)
 # Build:  docker build -t disaster-response .
-# Run:    docker run -p 8000:8000 disaster-response
+# Run:    docker run -p 7860:7860 disaster-response
 
 FROM python:3.11-slim
 

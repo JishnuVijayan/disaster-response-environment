@@ -6,7 +6,7 @@ MANDATORY ENVIRONMENT VARIABLES
   API_BASE_URL      LLM API endpoint (default: https://router.huggingface.co/v1)
   MODEL_NAME        Model identifier
   HF_TOKEN          Your Hugging Face / API key
-  ENV_BASE_URL      Running DisasterResponseEnv server URL (default: http://localhost:8000)
+  ENV_BASE_URL      Running DisasterResponseEnv server URL (default: http://localhost:7860)
 
 STDOUT FORMAT (required by OpenEnv spec)
   [START] task=<task_name> env=disaster_response model=<model_name>
@@ -45,7 +45,9 @@ from openai import OpenAI
 API_BASE_URL: str = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
 API_KEY: Optional[str] = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 MODEL_NAME: str = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
-ENV_BASE_URL: str = os.getenv("ENV_BASE_URL", "http://localhost:8000").rstrip("/")
+ENV_BASE_URL: str = os.getenv(
+    "ENV_BASE_URL", "https://jishnu-vijayan-03-disaster-response.hf.space"
+).rstrip("/")
 DISASTER_TASK: Optional[str] = os.getenv("DISASTER_TASK")  # None → run all 3
 # MAX_STEPS_CAP: optional hard cap override. When 0 or unset the per-task
 # max_steps from the reset response is used (task3_compound_hard = 130).

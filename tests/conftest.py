@@ -12,7 +12,7 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 
-ENV_BASE_URL: str = os.getenv("ENV_BASE_URL", "http://localhost:8000").rstrip("/")
+ENV_BASE_URL: str = os.getenv("ENV_BASE_URL", "http://localhost:7860").rstrip("/")
 
 
 @pytest.fixture(scope="session")

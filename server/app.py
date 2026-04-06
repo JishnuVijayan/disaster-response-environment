@@ -23,7 +23,7 @@ from __future__ import annotations
 import os
 from typing import Any, Dict
 
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
@@ -198,38 +198,20 @@ class BaselineRequest(BaseModel):
     num_seeds: int = Field(default=3, ge=1, le=10, description="Seeds to average over")
 
 
-@app.post(
-    "/baseline",
-    summary="Run oracle baseline on all 3 tasks",
-    tags=["Competition"],
-)
-def run_baseline(request: BaselineRequest = Body(default_factory=BaselineRequest)) -> Dict[str, Any]:
-    """
-    Runs the oracle heuristic policy on all 3 tasks and returns baseline scores.
-
-    The oracle uses only observable information (same as the agent) and
-    represents expert-level heuristic performance. By definition, normalised
-    oracle score = 1.0 on each task it was calibrated against.
-
-    Scores can vary across seeds due to stochastic alert generation.
-    """
-    import math
-    import random
+def _compute_baseline(seed: int = 42, num_seeds: int = 3) -> Dict[str, Any]:
+    """Shared logic for GET and POST /baseline."""
     from server.config import TASK_CONFIGS
-    from server.oracle import _oracle_create_alert, oracle_decide
 
     results = []
 
     for task_name, cfg in TASK_CONFIGS.items():
         seed_scores = []
 
-        for seed_offset in range(request.num_seeds):
-            seed = request.seed + seed_offset
-            # Use a fresh env instance to run the oracle
+        for seed_offset in range(num_seeds):
+            s = seed + seed_offset
             env_instance = DisasterResponseEnvironment()
-            env_instance.reset(seed=seed, task_name=task_name)
-            oracle_total = env_instance._run_oracle(seed)
-
+            env_instance.reset(seed=s, task_name=task_name)
+            oracle_total = env_instance._run_oracle(s)
             seed_scores.append(oracle_total)
 
         avg_oracle = sum(seed_scores) / len(seed_scores)
@@ -241,7 +223,7 @@ def run_baseline(request: BaselineRequest = Body(default_factory=BaselineRequest
                 "oracle_reward_avg": round(avg_oracle, 4),
                 "normalized_score": 1.0,  # oracle is the reference
                 "success_threshold": cfg["success_threshold"],
-                "seeds_used": [request.seed + i for i in range(request.num_seeds)],
+                "seeds_used": [seed + i for i in range(num_seeds)],
                 "note": (
                     "Oracle score is the normalisation baseline. "
                     "An RL/LLM agent is scored as agent_reward / oracle_reward."
@@ -257,6 +239,29 @@ def run_baseline(request: BaselineRequest = Body(default_factory=BaselineRequest
         ),
         "results": results,
     }
+
+
+@app.api_route(
+    "/baseline",
+    methods=["GET", "POST"],
+    summary="Run oracle baseline on all 3 tasks",
+    tags=["Competition"],
+)
+async def baseline_endpoint(request: Request) -> Dict[str, Any]:
+    """
+    GET  — runs oracle baseline with default seed=42, num_seeds=3.
+    POST — accepts optional JSON body {"seed": N, "num_seeds": N}.
+    Both return identical structure: baseline scores for all 3 tasks.
+    """
+    seed, num_seeds = 42, 3
+    if request.method == "POST":
+        try:
+            body = await request.json()
+            seed = int(body.get("seed", 42))
+            num_seeds = int(body.get("num_seeds", 3))
+        except Exception:
+            pass
+    return _compute_baseline(seed=seed, num_seeds=num_seeds)
 
 
 @app.get(
@@ -436,17 +441,17 @@ def root() -> HTMLResponse:
 
   <div class="section-title">Quickstart</div>
   <pre># 1. Start an episode
-curl -X POST http://localhost:8000/reset \\
+curl -X POST http://localhost:7860/reset \\
      -H "Content-Type: application/json" \\
      -d '{"task_name": "task1_flood_easy", "seed": 42}'
 
 # 2. Take an action (use alert_id from the reset response)
-curl -X POST http://localhost:8000/step \\
+curl -X POST http://localhost:7860/step \\
      -H "Content-Type: application/json" \\
      -d '{"action": {"action_type": "dispatch_rescue", "alert_id": "&lt;id&gt;"}}'
 
 # 3. Repeat until done=true, then check your score
-curl http://localhost:8000/grader</pre>
+curl http://localhost:7860/grader</pre>
 </div>
 
 <div class="footer">DisasterResponseEnv v1.0.0 &mdash; OpenEnv Hackathon Submission &mdash; <a href="/docs">Swagger UI</a> &mdash; <a href="/dashboard">Live Dashboard</a></div>
@@ -924,7 +929,7 @@ Object.entries(actions).forEach(([id, at]) => {
 # Entry point for direct execution
 # ---------------------------------------------------------------------------
 
-def main(host: str = "0.0.0.0", port: int = 8000) -> None:
+def main(host: str = "0.0.0.0", port: int = 7860) -> None:
     import uvicorn
     uvicorn.run(app, host=host, port=port)
 

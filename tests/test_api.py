@@ -5,7 +5,7 @@ Requires a running server. Skipped automatically when ENV_BASE_URL is
 unreachable, so the suite still passes in offline/CI environments.
 
 Run against local server:
-  uvicorn server.app:app --port 8000 &
+    uvicorn server.app:app --port 7860 &
   pytest tests/test_api.py -v
 
 Run against live HF Space:

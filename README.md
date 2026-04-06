@@ -169,7 +169,7 @@ openenv validate
 
 # Run inference against local server
 export HF_TOKEN=your_token
-export ENV_BASE_URL=http://localhost:8000
+export ENV_BASE_URL=http://localhost:7860
 python inference.py
 ```
 

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import random
 from typing import Any, Dict, List
-from uuid import uuid4
 
 try:
     from ..models import ActionType
@@ -126,8 +125,11 @@ def _oracle_create_alert(
     # Required to keep oracle RNG in sync with the main environment RNG.
     _ = rng.randint(0, 7)
 
+    # Deterministic alert_id — matches _create_alert's rng.randint call for RNG sync.
+    alert_id = f"{rng.randint(0x10000000, 0xFFFFFFFF):08x}"
+
     return {
-        "alert_id": str(uuid4())[:8],
+        "alert_id": alert_id,
         "zone_id": zone["id"],
         "zone_name": zone["name"],
         "source": source,

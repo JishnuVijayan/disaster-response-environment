@@ -15,7 +15,6 @@ from __future__ import annotations
 import math
 import random
 from typing import Any, Dict, List, Optional, Tuple
-from uuid import uuid4
 
 from openenv.core.env_server.interfaces import Environment
 
@@ -415,8 +414,11 @@ class DisasterResponseEnvironment(Environment):
             opts = _NOISE_MSGS.get(source, _NOISE_MSGS["sms"])
             tmpl = opts[_msg_roll % len(opts)]
 
+        # Deterministic alert_id from seeded RNG (must match oracle._oracle_create_alert)
+        alert_id = f"{self._rng.randint(0x10000000, 0xFFFFFFFF):08x}"
+
         return {
-            "alert_id": str(uuid4())[:8],
+            "alert_id": alert_id,
             "zone_id": zone["id"],
             "zone_name": zone["name"],
             "source": source,
