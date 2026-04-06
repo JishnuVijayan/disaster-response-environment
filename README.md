@@ -162,7 +162,7 @@ pip install -r requirements.txt
 uv sync
 
 # Start server
-uvicorn server.app:app --host 0.0.0.0 --port 8000
+uvicorn server.app:app --host 0.0.0.0 --port 7860
 
 # Validate OpenEnv compliance
 openenv validate
@@ -177,7 +177,7 @@ python inference.py
 
 ```bash
 docker build -t disaster-response .
-docker run -p 8000:8000 disaster-response
+docker run -p 7860:7860 disaster-response
 ```
 
 ### Run Inference Against Live Space
