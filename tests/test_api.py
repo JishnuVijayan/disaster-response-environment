@@ -191,7 +191,7 @@ class TestGrader:
         )
         r.raise_for_status()
         obs = r.json().get("observation", r.json())
-        max_steps = obs.get("max_steps", 30)
+        max_steps = obs.get("max_steps", 25)
 
         done = False
         for _ in range(max_steps):

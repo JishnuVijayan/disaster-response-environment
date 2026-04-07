@@ -18,9 +18,9 @@ from models import DisasterAction
 
 ALL_TASKS = ["task1_flood_easy", "task2_multizone_medium", "task3_compound_hard"]
 TASK_MAX_STEPS = {
-    "task1_flood_easy": 30,
-    "task2_multizone_medium": 55,
-    "task3_compound_hard": 130,
+    "task1_flood_easy": 25,
+    "task2_multizone_medium": 45,
+    "task3_compound_hard": 90,
 }
 
 

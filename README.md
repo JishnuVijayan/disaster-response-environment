@@ -83,7 +83,7 @@ The agent must triage alerts using observable signals only — **source channel*
     "broadcast_credits": 2
   },
   "step": 5,
-  "max_steps": 30,
+  "max_steps": 25,
   "task_name": "task1_flood_easy",
   "cumulative_reward": 1.42,
   "done": false,
@@ -99,9 +99,9 @@ The agent must triage alerts using observable signals only — **source channel*
 
 | Task | Difficulty | Zones | Steps | Rescue / Medical Lock | Spoof Rate | Success Threshold |
 |---|---|---|---|---|---|---|
-| `task1_flood_easy` | Easy | 1 | 30 | 2 / 2 steps | 0% | 0.75 |
-| `task2_multizone_medium` | Medium | 3 | 55 | 5 / 4 steps | 0% | 0.60 |
-| `task3_compound_hard` | Hard | 5 | 130 | 8 / 6 steps | 20% | 0.45 |
+| `task1_flood_easy` | Easy | 1 | 25 | 2 / 2 steps | 0% | 0.75 |
+| `task2_multizone_medium` | Medium | 3 | 45 | 5 / 4 steps | 0% | 0.60 |
+| `task3_compound_hard` | Hard | 5 | 90 | 8 / 6 steps | 20% | 0.45 |
 
 ### Task 1 — Single Zone Flood Triage (Easy)
 One zone, abundant resources, short lock times. Learn the fundamental binary signal: real vs. noise.

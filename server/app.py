@@ -567,7 +567,7 @@ def root() -> HTMLResponse:
     <div class="stat"><div class="stat-val">3</div><div class="stat-lbl">Tasks</div></div>
     <div class="stat"><div class="stat-val">5</div><div class="stat-lbl">Actions</div></div>
     <div class="stat"><div class="stat-val">±1.0</div><div class="stat-lbl">Reward Range</div></div>
-    <div class="stat"><div class="stat-val">130</div><div class="stat-lbl">Max Steps (hard)</div></div>
+    <div class="stat"><div class="stat-val">90</div><div class="stat-lbl">Max Steps (hard)</div></div>
     <div class="stat"><div class="stat-val">20%</div><div class="stat-lbl">Spoof Rate (hard)</div></div>
   </div>
 
@@ -575,15 +575,15 @@ def root() -> HTMLResponse:
   <div class="cards">
     <div class="card">
       <div class="card-title"><span class="pill easy">Easy</span> task1_flood_easy</div>
-      <div class="card-body">Single-zone flash flood. ~75% real alerts, 3 rescue teams, 2-step locks, 30 steps. Learn the core real-vs-noise signal.</div>
+      <div class="card-body">Single-zone flash flood. ~75% real alerts, 3 rescue teams, 2-step locks, 25 steps. Learn the core real-vs-noise signal.</div>
     </div>
     <div class="card">
       <div class="card-title"><span class="pill medium">Medium</span> task2_multizone_medium</div>
-      <div class="card-body">Three-zone flood. Resources shared across zones with 5/4-step locks, 55 steps. Spatial prioritisation becomes critical.</div>
+      <div class="card-body">Three-zone flood. Resources shared across zones with 5/4-step locks, 45 steps. Spatial prioritisation becomes critical.</div>
     </div>
     <div class="card">
       <div class="card-title"><span class="pill hard">Hard</span> task3_compound_hard</div>
-      <div class="card-body">Five-zone earthquake + flood. 20% spoofed alerts, 8/6-step locks, cascade stress propagation, 130 steps. Requires long-horizon strategy.</div>
+      <div class="card-body">Five-zone earthquake + flood. 20% spoofed alerts, 8/6-step locks, cascade stress propagation, 90 steps. Requires long-horizon strategy.</div>
     </div>
   </div>
 

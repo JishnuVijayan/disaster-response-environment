@@ -17,19 +17,19 @@ tasks:
   - name: task1_flood_easy
     description: "Single Zone Flood Triage — one residential zone, 75% real alerts, abundant resources."
     difficulty: easy
-    max_steps: 30
+    max_steps: 25
     success_threshold: 0.75
 
   - name: task2_multizone_medium
     description: "Multi-Zone Flash Flood — three zones compete for limited resources, evacuation credits matter."
     difficulty: medium
-    max_steps: 55
+    max_steps: 45
     success_threshold: 0.60
 
   - name: task3_compound_hard
     description: "Cascading Compound Disaster — five zones, 20% spoofed alerts, zone cascade mechanics, 8-step resource locks."
     difficulty: hard
-    max_steps: 130
+    max_steps: 90
     success_threshold: 0.45
 
 observation_space: DisasterObservation

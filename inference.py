@@ -56,7 +56,7 @@ ENV_BASE_URL: str = os.getenv(
 ).rstrip("/")
 DISASTER_TASK: Optional[str] = os.getenv("DISASTER_TASK")  # None → run all 3
 # MAX_STEPS_CAP: optional hard cap override. When 0 or unset the per-task
-# max_steps from the reset response is used (task3_compound_hard = 130).
+# max_steps from the reset response is used (task3_compound_hard = 90).
 _max_steps_env: str = os.getenv("MAX_STEPS", "0").strip()
 MAX_STEPS_CAP: Optional[int] = (int(_max_steps_env) or None) if _max_steps_env else None
 TEMPERATURE: float = float(os.getenv("TEMPERATURE", "0.2"))
