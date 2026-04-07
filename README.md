@@ -299,3 +299,7 @@ disaster-response/
     ├── oracle.py              # oracle_decide() + _oracle_create_alert()
     └── environment.py         # DisasterResponseEnvironment class
 ```
+
+---
+
+Made with ❤️ for the Meta Hackathon.
