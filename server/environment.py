@@ -451,8 +451,9 @@ class DisasterResponseEnvironment(Environment):
         if oracle_total > 0:
             raw = self._cumulative_reward / oracle_total
         else:
-            raw = 1.0 if self._cumulative_reward >= 0 else 0.0
-        self._normalized_score = round(min(1.0, max(0.0, raw)), 4)
+            raw = 0.5  # neutral fallback — oracle itself performed near-zero
+        # Clamp strictly within (0, 1): 0.0 and 1.0 are not valid scores
+        self._normalized_score = round(min(0.9999, max(0.0001, raw)), 4)
 
         DisasterResponseEnvironment._last_grader_data = {
             "task": self._task_name,

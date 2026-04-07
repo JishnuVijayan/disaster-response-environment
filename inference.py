@@ -42,8 +42,8 @@ from openai import OpenAI
 # Configuration
 # ---------------------------------------------------------------------------
 
-API_BASE_URL: str = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-API_KEY: Optional[str] = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+API_BASE_URL: str = os.environ["API_BASE_URL"]
+API_KEY: str = os.environ["API_KEY"]
 MODEL_NAME: str = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
 ENV_BASE_URL: str = os.getenv(
     "ENV_BASE_URL", "https://jishnu-vijayan-03-disaster-response.hf.space"
@@ -320,15 +320,10 @@ def fallback_action(obs: Dict[str, Any], alert_id: str) -> Dict[str, Any]:
 # Single-task episode runner
 # ---------------------------------------------------------------------------
 
-def run_episode(client: Optional[OpenAI], task_name: str, seed: int = 42) -> None:
+def run_episode(client: OpenAI, task_name: str, seed: int = 42) -> None:
     log_start(task=task_name, model=MODEL_NAME)
 
-    # Start in fallback mode immediately if no client is available
-    using_fallback: bool = client is None
-    if using_fallback:
-        log_warn(
-            f"No LLM client available — running {task_name} with heuristic fallback policy."
-        )
+    using_fallback: bool = False
 
     rewards: List[float] = []
     steps_taken: int = 0
@@ -432,21 +427,7 @@ def run_episode(client: Optional[OpenAI], task_name: str, seed: int = 42) -> Non
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    client: Optional[OpenAI] = None
-
-    if not API_KEY:
-        log_warn(
-            "HF_TOKEN / API_KEY is not set — LLM unavailable. "
-            "All tasks will run with heuristic fallback policy."
-        )
-    else:
-        try:
-            client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
-        except Exception as exc:
-            log_warn(
-                f"Failed to initialise OpenAI client ({exc}) — "
-                "falling back to heuristic policy for all tasks."
-            )
+    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
     tasks_to_run = [DISASTER_TASK] if DISASTER_TASK else ALL_TASKS
 
