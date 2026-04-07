@@ -177,10 +177,12 @@ def get_grader() -> Dict[str, Any]:
                 "Run a full episode via /reset → /step until done=True."
             ),
         }
+    score = _bounded_score(data["score"])
     return {
         "status": "ok",
         "task": data["task"],
-        "normalized_score": data["score"],
+      "score": score,
+      "normalized_score": score,
         "debug_info": {
             "agent_cumulative_reward": data["agent_reward"],
             "oracle_cumulative_reward": data["oracle_reward"],
@@ -229,6 +231,11 @@ EOC_PROMPT_INSTRUCTIONS = textwrap.dedent(
 ).strip()
 
 
+def _bounded_score(value: float) -> float:
+  """Keep externally exposed scores in a validator-safe open-interval band."""
+  return round(min(0.9, max(0.1, float(value))), 4)
+
+
 def _parse_llm_action(text: str, fallback: str = "dismiss_false_alarm") -> str:
     """Extract action_type string from raw LLM response text."""
     text = text.strip()
@@ -264,7 +271,7 @@ def _run_agent_episode(
     """
     Run one full episode for task_name/seed.
     Uses LLM when client is provided, oracle heuristic as fallback.
-    Returns normalized_score strictly in (0.0001, 0.9999).
+    Returns normalized_score safely in [0.1, 0.9].
     """
     from server.oracle import oracle_decide
 
@@ -353,7 +360,7 @@ def _run_agent_episode(
         done = getattr(obs, "done", False)
 
     score = env_instance._normalized_score
-    return score if score is not None else 0.5
+    return _bounded_score(score if score is not None else 0.5)
 
 
 def _compute_baseline(seed: int = 42, num_seeds: int = 1) -> Dict[str, Any]:
@@ -361,7 +368,7 @@ def _compute_baseline(seed: int = 42, num_seeds: int = 1) -> Dict[str, Any]:
     Trigger inference against all 3 tasks.
     Uses LLM (via HF_TOKEN / API_KEY env vars) when credentials are available;
     falls back to oracle heuristic when running without API access.
-    Scores are normalized to (0.0001, 0.9999) — strictly within (0, 1).
+    Scores are normalized to [0.1, 0.9] — safely within (0, 1).
     """
     from server.config import TASK_CONFIGS
 
@@ -388,13 +395,13 @@ def _compute_baseline(seed: int = 42, num_seeds: int = 1) -> Dict[str, Any]:
             score = _run_agent_episode(task_name, s, client=client, model_name=model_name)
             seed_scores.append(score)
 
-        avg_score = sum(seed_scores) / len(seed_scores)
-        avg_score = round(min(0.9999, max(0.0001, avg_score)), 4)
+        avg_score = _bounded_score(sum(seed_scores) / len(seed_scores))
 
         results.append(
             {
                 "task": task_name,
                 "difficulty": cfg["difficulty"],
+            "score": avg_score,
                 "normalized_score": avg_score,
                 "scores_per_seed": [round(s, 4) for s in seed_scores],
                 "success_threshold": cfg["success_threshold"],
@@ -409,6 +416,7 @@ def _compute_baseline(seed: int = 42, num_seeds: int = 1) -> Dict[str, Any]:
             f"Baseline scores from {agent_label} agent across all 3 tasks. "
             "Scores are normalized to (0, 1) relative to oracle-optimal play."
         ),
+      "scores": {row["task"]: row["score"] for row in results},
         "results": results,
     }
 

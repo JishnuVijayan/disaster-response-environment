@@ -186,7 +186,7 @@ class DisasterState(State):
     )
     normalized_score: Optional[float] = Field(
         default=None,
-        description="Agent reward / Oracle reward, clamped strictly within (0.0001, 0.9999)"
+        description="Agent reward / Oracle reward, mapped safely within [0.1, 0.9]"
     )
     total_alerts_processed: int = Field(default=0)
     correct_dispatches: int = Field(default=0)
