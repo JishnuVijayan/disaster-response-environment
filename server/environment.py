@@ -453,10 +453,8 @@ class DisasterResponseEnvironment(Environment):
         else:
             raw = 0.5  # neutral fallback — oracle itself performed near-zero
 
-        # Keep scores well inside (0, 1) so validator-side rounding never becomes 0.00/1.00.
-        # raw is first clipped to [0, 1], then linearly mapped to [0.1, 0.9].
-        clipped = min(1.0, max(0.0, raw))
-        self._normalized_score = round(0.1 + 0.8 * clipped, 4)
+        # Keep scores strictly inside (0, 1) for all evaluator agent behaviors.
+        self._normalized_score = round(max(0.01, min(0.99, raw)), 4)
 
         DisasterResponseEnvironment._last_grader_data = {
             "task": self._task_name,

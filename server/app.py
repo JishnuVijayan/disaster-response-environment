@@ -181,8 +181,8 @@ def get_grader() -> Dict[str, Any]:
     return {
         "status": "ok",
         "task": data["task"],
-      "score": score,
-      "normalized_score": score,
+        "score": score,
+        "normalized_score": score,
         "debug_info": {
             "agent_cumulative_reward": data["agent_reward"],
             "oracle_cumulative_reward": data["oracle_reward"],
@@ -232,8 +232,8 @@ EOC_PROMPT_INSTRUCTIONS = textwrap.dedent(
 
 
 def _bounded_score(value: float) -> float:
-  """Keep externally exposed scores in a validator-safe open-interval band."""
-  return round(min(0.9, max(0.1, float(value))), 4)
+    """Keep externally exposed scores in a validator-safe open-interval band."""
+    return round(min(0.99, max(0.01, float(value))), 4)
 
 
 def _parse_llm_action(text: str, fallback: str = "dismiss_false_alarm") -> str:
@@ -271,7 +271,7 @@ def _run_agent_episode(
     """
     Run one full episode for task_name/seed.
     Uses LLM when client is provided, oracle heuristic as fallback.
-    Returns normalized_score safely in [0.1, 0.9].
+    Returns normalized_score safely in [0.01, 0.99].
     """
     from server.oracle import oracle_decide
 
@@ -368,7 +368,7 @@ def _compute_baseline(seed: int = 42, num_seeds: int = 1) -> Dict[str, Any]:
     Trigger inference against all 3 tasks.
     Uses LLM (via HF_TOKEN / API_KEY env vars) when credentials are available;
     falls back to oracle heuristic when running without API access.
-    Scores are normalized to [0.1, 0.9] — safely within (0, 1).
+    Scores are normalized to [0.01, 0.99] — safely within (0, 1).
     """
     from server.config import TASK_CONFIGS
 

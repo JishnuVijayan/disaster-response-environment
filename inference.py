@@ -12,7 +12,7 @@ STDOUT FORMAT (required by OpenEnv spec)
   [START] task=<task_name> env=disaster_response model=<model_name>
   [WARN]  <message>
   [STEP]  step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
-  [END]   success=<true|false> steps=<n> rewards=<r1,r2,...>
+    [END]   success=<true|false> steps=<n> score=<0.0000> rewards=<r1,r2,...>
 
 FALLBACK BEHAVIOUR
   If HF_TOKEN / API_KEY is missing or the LLM becomes unreachable mid-episode,
@@ -37,6 +37,10 @@ from typing import Any, Dict, List, Optional
 
 import requests
 from openai import OpenAI
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 # ---------------------------------------------------------------------------
@@ -113,10 +117,11 @@ def log_step(
     )
 
 
-def log_end(success: bool, steps: int, rewards: List[float]) -> None:
+def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+    score = max(0.01, min(0.99, float(score)))
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
-        f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}",
+        f"[END] success={str(success).lower()} steps={steps} score={score:.4f} rewards={rewards_str}",
         flush=True,
     )
 
@@ -331,6 +336,7 @@ def run_episode(client: OpenAI, task_name: str, seed: int = 42) -> None:
     rewards: List[float] = []
     steps_taken: int = 0
     success: bool = False
+    score: float = 0.0
     history: List[str] = []
     last_error: Optional[str] = None
 
@@ -340,7 +346,7 @@ def run_episode(client: OpenAI, task_name: str, seed: int = 42) -> None:
         except Exception as exc:
             last_error = str(exc)[:200]
             log_warn(f"Environment reset failed: {last_error}")
-            log_end(success=False, steps=0, rewards=[])
+            log_end(success=False, steps=0, score=0.0, rewards=[])
             return
 
         task_max_steps: int = int(obs.get("max_steps") or 50)
@@ -406,10 +412,12 @@ def run_episode(client: OpenAI, task_name: str, seed: int = 42) -> None:
             log_step(step=step, action=action_str, reward=reward, done=done, error=last_error)
 
             action_label = action.get("action_type", "?")
-            history.append(f"Step {step}: {action_label} → reward {reward:+.2f}")
+            history.append(f"Step {step}: {action_label} -> reward {reward:+.2f}")
 
             if done:
                 norm_score = obs.get("normalized_score")
+                if norm_score is not None:
+                    score = max(0.01, min(0.99, float(norm_score)))
                 threshold = {
                     "task1_flood_easy": 0.75,
                     "task2_multizone_medium": 0.60,
@@ -421,7 +429,7 @@ def run_episode(client: OpenAI, task_name: str, seed: int = 42) -> None:
             success = False
 
     finally:
-        log_end(success=success, steps=steps_taken, rewards=rewards)
+        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
 
 # ---------------------------------------------------------------------------
