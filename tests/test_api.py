@@ -219,7 +219,7 @@ class TestGrader:
         data = r.json()
         score = data.get("score") or data.get("normalized_score")
         if score is not None:
-            assert 0.0 <= float(score) <= 1.0, f"/grader score {score} outside [0.0, 1.0]"
+            assert 0.0 < float(score) < 1.0, f"/grader score {score} must be strictly in (0.0, 1.0)"
 
 
 # ---------------------------------------------------------------------------
@@ -246,9 +246,9 @@ class TestBaseline:
         if isinstance(scores, dict):
             for task, score in scores.items():
                 if score is not None:
-                    assert 0.0 <= float(score) <= 1.0, f"Baseline score for {task}={score} out of range"
+                    assert 0.0 < float(score) < 1.0, f"Baseline score for {task}={score} must be strictly in (0.0, 1.0)"
         elif isinstance(scores, list):
             for entry in scores:
                 score = entry.get("score") or entry.get("normalized_score")
                 if score is not None:
-                    assert 0.0 <= float(score) <= 1.0, f"Baseline score {score} out of range"
+                    assert 0.0 < float(score) < 1.0, f"Baseline score {score} must be strictly in (0.0, 1.0)"

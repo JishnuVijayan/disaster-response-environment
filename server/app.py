@@ -163,7 +163,7 @@ def get_tasks() -> Dict[str, Any]:
 def get_grader() -> Dict[str, Any]:
     """
     Returns the oracle-normalised score for the last completed episode.
-    Score is in [0, 1].  Only populated after an episode ends (done=True).
+    Score is strictly in (0, 1).  Only populated after an episode ends (done=True).
     """
     data = getattr(DisasterResponseEnvironment, "_last_grader_data", {})
     if not data or data.get("score") is None:
@@ -178,16 +178,18 @@ def get_grader() -> Dict[str, Any]:
         "status": "ok",
         "task": data["task"],
         "normalized_score": data["score"],
-        "agent_reward": data["agent_reward"],
-        "oracle_reward": data["oracle_reward"],
-        "steps_completed": data["steps_completed"],
+        "debug_info": {
+            "agent_cumulative_reward": data["agent_reward"],
+            "oracle_cumulative_reward": data["oracle_reward"],
+            "steps_completed": data["steps_completed"],
+        },
         "metrics": data.get("metrics", {}),
         "interpretation": {
-            "1.0": "Agent matched or exceeded oracle (human-expert) performance",
-            "0.75": "Strong performance — approaches expert-level triage",
-            "0.50": "Moderate performance — basic triage learned",
-            "0.25": "Weak performance — mostly random or greedy",
-            "0.0": "Failed — likely worse than random",
+            "near_1": "Agent matched or exceeded oracle (human-expert) performance",
+            "near_0_75": "Strong performance — approaches expert-level triage",
+            "near_0_50": "Moderate performance — basic triage learned",
+            "near_0_25": "Weak performance — mostly random or greedy",
+            "near_0": "Failed — likely worse than random",
         },
     }
 
@@ -199,8 +201,12 @@ class BaselineRequest(BaseModel):
 
 
 def _compute_baseline(seed: int = 42, num_seeds: int = 3) -> Dict[str, Any]:
-    """Shared logic for GET and POST /baseline."""
+    """
+    Run the oracle heuristic agent through each task and return normalized scores.
+    Scores are computed as agent_reward / oracle_reward, clamped to (0.0001, 0.9999).
+    """
     from server.config import TASK_CONFIGS
+    from server.oracle import oracle_decide
 
     results = []
 
@@ -210,23 +216,46 @@ def _compute_baseline(seed: int = 42, num_seeds: int = 3) -> Dict[str, Any]:
         for seed_offset in range(num_seeds):
             s = seed + seed_offset
             env_instance = DisasterResponseEnvironment()
-            env_instance.reset(seed=s, task_name=task_name)
-            oracle_total = env_instance._run_oracle(s)
-            seed_scores.append(oracle_total)
+            obs = env_instance.reset(seed=s, task_name=task_name)
 
-        avg_oracle = sum(seed_scores) / len(seed_scores)
+            # Run full episode using the observable-only oracle heuristic
+            done = getattr(obs, "done", False)
+            while not done:
+                alert = env_instance._current_alert
+                if alert is None:
+                    break
+                action_type = oracle_decide(
+                    alert,
+                    env_instance._resources,
+                    env_instance._zones,
+                )
+                action = DisasterAction(
+                    action_type=action_type,
+                    alert_id=alert["alert_id"],
+                )
+                obs = env_instance.step(action)
+                done = getattr(obs, "done", False)
+
+            score = env_instance._normalized_score
+            if score is None:
+                score = 0.5
+            seed_scores.append(score)
+
+        avg_score = sum(seed_scores) / len(seed_scores)
+        # Clamp strictly within (0, 1)
+        avg_score = round(min(0.9999, max(0.0001, avg_score)), 4)
 
         results.append(
             {
                 "task": task_name,
                 "difficulty": cfg["difficulty"],
-                "oracle_reward_avg": round(avg_oracle, 4),
-                "normalized_score": 1.0,  # oracle is the reference
+                "normalized_score": avg_score,
+                "scores_per_seed": [round(s, 4) for s in seed_scores],
                 "success_threshold": cfg["success_threshold"],
                 "seeds_used": [seed + i for i in range(num_seeds)],
                 "note": (
-                    "Oracle score is the normalisation baseline. "
-                    "An RL/LLM agent is scored as agent_reward / oracle_reward."
+                    "Heuristic oracle agent scored against oracle normalization baseline. "
+                    "Agent uses only observable signals (source, severity, zone stress, resources)."
                 ),
             }
         )
@@ -234,8 +263,9 @@ def _compute_baseline(seed: int = 42, num_seeds: int = 3) -> Dict[str, Any]:
     return {
         "baseline_agent": "oracle_heuristic",
         "description": (
-            "Rule-based oracle using only observable signals (same information as agent). "
-            "Represents calibrated human-expert level performance."
+            "Rule-based heuristic agent using only observable signals. "
+            "Scores represent agent performance relative to optimal oracle play, "
+            "normalized to (0, 1)."
         ),
         "results": results,
     }

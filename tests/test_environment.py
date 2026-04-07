@@ -4,7 +4,7 @@ Unit tests for DisasterResponseEnvironment.
 Tests run against the environment class directly — no HTTP server required.
 Covers:
   - Determinism: same seed → same initial observation and score trajectory
-  - Grader range: normalized_score always in [0.0, 1.0]
+  - Grader range: normalized_score always strictly in (0.0, 1.0)
   - Episode boundary: all tasks terminate within configured max_steps
   - Hidden field protection: is_real / is_spoofed not leaked in observation
 """
@@ -124,8 +124,9 @@ class TestGraderRange:
         obs_dict = _obs_to_dict(obs)
         score = obs_dict.get("normalized_score")
         if score is not None:
-            assert 0.0 <= score <= 1.0, (
-                f"{task_name}: normalized_score={score} is outside [0.0, 1.0]"
+            assert 0.0 < score < 1.0, (
+                f"{task_name}: normalized_score={score} must be strictly in (0.0, 1.0) — "
+                f"0.0 and 1.0 are not valid scores per the OpenEnv validator"
             )
 
     @pytest.mark.parametrize("task_name", ALL_TASKS)

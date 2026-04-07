@@ -38,6 +38,12 @@ from typing import Any, Dict, List, Optional
 import requests
 from openai import OpenAI
 
+# Load .env file if present (before any os.getenv calls)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
