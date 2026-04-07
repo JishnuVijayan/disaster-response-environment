@@ -18,6 +18,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from openenv.core.env_server.interfaces import Environment
 
+MIN_VALID_SCORE = 0.002
+MAX_VALID_SCORE = 0.998
+
 try:
     from ..models import ActionType, DisasterAction, DisasterObservation, DisasterState
     from .config import DEFAULT_TASK, TASK_CONFIGS
@@ -454,7 +457,7 @@ class DisasterResponseEnvironment(Environment):
             raw = 0.5  # neutral fallback — oracle itself performed near-zero
 
         # Keep scores strictly inside (0, 1) for all evaluator agent behaviors.
-        self._normalized_score = round(max(0.01, min(0.99, raw)), 4)
+        self._normalized_score = round(max(MIN_VALID_SCORE, min(MAX_VALID_SCORE, raw)), 4)
 
         DisasterResponseEnvironment._last_grader_data = {
             "task": self._task_name,

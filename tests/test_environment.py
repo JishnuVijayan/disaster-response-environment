@@ -128,10 +128,10 @@ class TestGraderRange:
                 f"{task_name}: normalized_score={score} must be strictly in (0.0, 1.0) — "
                 f"0.0 and 1.0 are not valid scores per the OpenEnv validator"
             )
-            rounded_2dp = round(float(score), 2)
-            assert 0.0 < rounded_2dp < 1.0, (
-                f"{task_name}: normalized_score={score} rounds to {rounded_2dp:.2f}; "
-                "must remain strictly between 0.00 and 1.00 after 2dp rounding"
+            rounded_3dp = round(float(score), 3)
+            assert 0.0 < rounded_3dp < 1.0, (
+                f"{task_name}: normalized_score={score} rounds to {rounded_3dp:.3f}; "
+                "must remain strictly between 0.000 and 1.000 after 3dp rounding"
             )
 
     @pytest.mark.parametrize("task_name", ALL_TASKS)

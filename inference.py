@@ -61,6 +61,8 @@ MAX_STEPS_CAP: Optional[int] = (int(_max_steps_env) or None) if _max_steps_env e
 TEMPERATURE: float = float(os.getenv("TEMPERATURE", "0.2"))
 MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "1024"))
 BENCHMARK: str = "disaster_response"
+MIN_VALID_SCORE: float = 0.002
+MAX_VALID_SCORE: float = 0.998
 
 ALL_TASKS: List[str] = [
     "task1_flood_easy",
@@ -118,7 +120,7 @@ def log_step(
 
 
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    score = max(0.01, min(0.99, float(score)))
+    score = max(MIN_VALID_SCORE, min(MAX_VALID_SCORE, float(score)))
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     print(
         f"[END] success={str(success).lower()} steps={steps} score={score:.4f} rewards={rewards_str}",
@@ -417,7 +419,7 @@ def run_episode(client: OpenAI, task_name: str, seed: int = 42) -> None:
             if done:
                 norm_score = obs.get("normalized_score")
                 if norm_score is not None:
-                    score = max(0.01, min(0.99, float(norm_score)))
+                    score = max(MIN_VALID_SCORE, min(MAX_VALID_SCORE, float(norm_score)))
                 threshold = {
                     "task1_flood_easy": 0.75,
                     "task2_multizone_medium": 0.60,
