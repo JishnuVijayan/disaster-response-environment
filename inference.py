@@ -60,7 +60,7 @@ DISASTER_TASK: Optional[str] = os.getenv("DISASTER_TASK")  # None → run all 3
 _max_steps_env: str = os.getenv("MAX_STEPS", "0").strip()
 MAX_STEPS_CAP: Optional[int] = (int(_max_steps_env) or None) if _max_steps_env else None
 TEMPERATURE: float = float(os.getenv("TEMPERATURE", "0.2"))
-MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "256"))
+MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "1024"))
 BENCHMARK: str = "disaster_response"
 
 ALL_TASKS: List[str] = [
@@ -69,7 +69,7 @@ ALL_TASKS: List[str] = [
     "task3_compound_hard",
 ]
 
-SYSTEM_PROMPT: str = textwrap.dedent(
+EOC_PROMPT_INSTRUCTIONS: str = textwrap.dedent(
     """
     You are an AI Emergency Triage Coordinator inside an Emergency Operations Center (EOC).
     Disaster alerts are arriving from multiple geographic zones. You must decide how to respond
@@ -175,6 +175,8 @@ def build_prompt(obs: Dict[str, Any], history: List[str]) -> str:
 
     prompt = textwrap.dedent(
         f"""
+        {EOC_PROMPT_INSTRUCTIONS}
+
         === EOC TRIAGE DECISION REQUIRED ===
         Step: {step} / {max_steps}
         Task: {obs.get('task_name', '')}
@@ -370,7 +372,6 @@ def run_episode(client: OpenAI, task_name: str, seed: int = 42) -> None:
                     completion = client.chat.completions.create(  # type: ignore[union-attr]
                         model=MODEL_NAME,
                         messages=[
-                            {"role": "system", "content": SYSTEM_PROMPT},
                             {"role": "user", "content": user_prompt},
                         ],
                         temperature=TEMPERATURE,

@@ -203,18 +203,28 @@ class BaselineRequest(BaseModel):
     num_seeds: int = Field(default=3, ge=1, le=10, description="Seeds to average over")
 
 
-_BASELINE_USER_TEMPLATE = textwrap.dedent(
+EOC_PROMPT_INSTRUCTIONS = textwrap.dedent(
     """
-    You are an AI Emergency Triage Coordinator (EOC). Respond with ONLY a single JSON object.
-    Actions: dispatch_rescue | dispatch_medical | issue_evacuation | request_more_info | dismiss_false_alarm
-    Hints: sev>=0.8 reliable source→rescue; sev>=0.5→medical; sev<0.3→dismiss; unreliable→request_more_info first; zone stress>=0.65 + credits→evacuation
-    Format: {{"action_type": "<action>", "alert_id": "<alert_id>"}}
+    You are an AI Emergency Triage Coordinator inside an Emergency Operations Center (EOC).
+    Disaster alerts are arriving from multiple geographic zones. You must decide how to respond
+    to each alert to save the most lives while managing finite resources.
 
-    Step {step}/{max_steps} | {task_name}
-    Alert  : source={source} severity={severity:.3f} deliberated={deliberation}x
-    Zone   : {zone_name} stress={zone_stress:.2f}
-    Resources: rescue={rescue} medical={medical} credits={credits}
-    alert_id={alert_id}
+    AVAILABLE ACTIONS (respond with exactly one JSON object):
+      {"action_type": "dispatch_rescue",    "alert_id": "<id>"}  — Deploy rescue team (locks resource K steps)
+      {"action_type": "dispatch_medical",   "alert_id": "<id>"}  — Deploy medical unit (locks resource K steps)
+      {"action_type": "issue_evacuation",   "alert_id": "<id>"}  — Issue evacuation order (uses broadcast credit)
+      {"action_type": "request_more_info",  "alert_id": "<id>"}  — Deliberate one step (costs -0.05, keeps same alert)
+      {"action_type": "dismiss_false_alarm","alert_id": "<id>"}  — Classify as noise
+
+    DECISION HEURISTICS:
+    - Sensor / radio alerts with severity > 0.80 → dispatch_rescue immediately
+    - Social media / SMS alerts with high severity → request_more_info first (may be spoofed)
+    - Severity < 0.30 → likely noise → dismiss_false_alarm
+    - Zone stress ≥ 0.65 and broadcast credit available → issue_evacuation
+    - Missing a real victim costs -1.00. Wasting a resource costs -0.30.
+    - Respond quickly: reward decays with delay.
+
+    Respond with ONLY a valid JSON object. No explanation, no extra text.
     """
 ).strip()
 
@@ -276,26 +286,49 @@ def _run_agent_episode(
         action_type: Optional[str] = None
 
         if client is not None:
-            user_msg = _BASELINE_USER_TEMPLATE.format(
-                step=obs_d.get("step", 0),
-                max_steps=obs_d.get("max_steps", 0),
-                task_name=task_name,
-                source=alert.get("source", "unknown"),
-                severity=float(alert.get("severity", 0)),
-                deliberation=alert.get("deliberation_count", 0),
-                zone_name=alert.get("zone_name", "unknown"),
-                zone_stress=zone_stress,
-                rescue=resources.get("rescue_teams_available", 0),
-                medical=resources.get("medical_units_available", 0),
-                credits=resources.get("broadcast_credits", 0),
-                alert_id=alert_id,
+            step = obs_d.get("step", 0)
+            locked_rescue = resources.get("rescue_teams_locked", [])
+            locked_medical = resources.get("medical_units_locked", [])
+            zone_lines = "\n".join(
+                f"  {z['name']} (id={z['zone_id']}): stress={z['stress']:.2f}, "
+                f"pending_alerts={z.get('pending_alerts', 0)}"
+                for z in zones
             )
+            user_msg = textwrap.dedent(f"""
+                {EOC_PROMPT_INSTRUCTIONS}
+
+                === EOC TRIAGE DECISION REQUIRED ===
+                Step: {step} / {obs_d.get('max_steps', 0)}
+                Task: {task_name}
+                Cumulative reward so far: {obs_d.get('cumulative_reward', 0.0):.2f}
+
+                CURRENT ALERT:
+                  alert_id : {alert_id}
+                  zone     : {alert.get('zone_name', '?')} ({alert.get('zone_id', '?')})
+                  source   : {alert.get('source', '?')}
+                  severity : {float(alert.get('severity', 0)):.3f}
+                  message  : {alert.get('message', '(none)')}
+                  waiting  : {step - alert.get('arrival_step', step)} steps
+                  deliber. : {alert.get('deliberation_count', 0)} times
+
+                ZONE STATUS:
+                {zone_lines}
+
+                RESOURCES:
+                  Rescue teams available : {resources.get('rescue_teams_available', 0)}
+                  Rescue teams locked    : {len(locked_rescue)} (returns at steps {[t['returns_at_step'] for t in locked_rescue]})
+                  Medical units available: {resources.get('medical_units_available', 0)}
+                  Medical units locked   : {len(locked_medical)} (returns at steps {[t['returns_at_step'] for t in locked_medical]})
+                  Broadcast credits      : {resources.get('broadcast_credits', 0)}
+
+                Respond with ONE JSON object only.
+            """).strip()
             try:
                 completion = client.chat.completions.create(
                     model=model_name,
                     messages=[{"role": "user", "content": user_msg}],
                     temperature=0.2,
-                    max_tokens=512,
+                    max_tokens=1024,
                 )
                 raw = completion.choices[0].message.content or ""
                 action_type = _parse_llm_action(raw)
