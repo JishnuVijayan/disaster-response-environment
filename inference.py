@@ -38,18 +38,13 @@ from typing import Any, Dict, List, Optional
 import requests
 from openai import OpenAI
 
-# Load .env file if present (before any os.getenv calls)
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass 
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
 API_BASE_URL: str = os.environ["API_BASE_URL"]
-API_KEY: str = os.environ["API_KEY"]
+API_KEY: str = os.environ["API_KEY"] or os.environ["HF_TOKEN"]
 MODEL_NAME: str = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
 ENV_BASE_URL: str = os.getenv(
     "ENV_BASE_URL", "https://jishnu-vijayan-03-disaster-response.hf.space"
